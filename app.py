@@ -34,7 +34,7 @@ def validBookObject(bookObject):
         return False
 
 
-@app.route('/books', methods =['POST'])
+@app.route('/books', methods=['POST'])
 def add_book():
     request_data = request.get_json();
     if (validBookObject(request_data)):
@@ -57,7 +57,7 @@ def add_book():
         return response
 
 
-@app.route('/books/<int:id>')
+@app.route('/books/<int:id>', methods=['POST'])
 def get_book_by_id(id):
     result = {}
     for book in books:
@@ -68,6 +68,41 @@ def get_book_by_id(id):
             }
 
     return jsonify(result)
+
+
+@app.route('/books/<int:id>', methods=['PUT'])
+def replace_book(id):
+    request_data = request.get_json()
+    new_book = {
+        "id": id,
+        "name": request_data['name'],
+        "author": request_data['author'],
+        "price": request_data['price']
+    }
+    i = 0;
+    for book in books:
+        current_id = book["id"]
+        if current_id == id:
+            books[i] = new_book
+        i += 1
+    response = Response("", status=204)
+    return response
+
+
+@app.route('/books/<int:id>', methods=['PATCH'])
+def update_book(id):
+    request_data = request.get_json()
+    updated_book = {}
+    if ("name" in request_data):
+        updated_book["name"] = request_data["name"]
+    if ("price" in request_data):
+        updated_book["price"] = request_data["price"]
+    for book in books:
+        if book["id"] == id:
+            book.update(updated_book)
+    response = Response("", status=204)
+    response.headers['Location'] = "/books/" + str(id)
+    return response
 
 
 app.run(port=5000)
