@@ -28,7 +28,7 @@ def get_books():
 
 
 def validBookObject(bookObject):
-    if ("id" in bookObject and "name" in bookObject and "price" in bookObject and "author" in bookObject):
+    if "id" in bookObject and "name" in bookObject and "price" in bookObject and "author" in bookObject:
         return True
     else:
         return False
@@ -37,7 +37,7 @@ def validBookObject(bookObject):
 @app.route('/books', methods=['POST'])
 def add_book():
     request_data = request.get_json();
-    if (validBookObject(request_data)):
+    if validBookObject(request_data):
         new_book = {
             "id": request_data['id'],
             "name": request_data['name'],
@@ -93,15 +93,32 @@ def replace_book(id):
 def update_book(id):
     request_data = request.get_json()
     updated_book = {}
-    if ("name" in request_data):
+    if "name" in request_data:
         updated_book["name"] = request_data["name"]
-    if ("price" in request_data):
+    if "price" in request_data:
         updated_book["price"] = request_data["price"]
     for book in books:
         if book["id"] == id:
             book.update(updated_book)
     response = Response("", status=204)
     response.headers['Location'] = "/books/" + str(id)
+    return response
+
+
+@app.route('/books/<int:id>', methods=['DELETE'])
+def delete_book(id):
+    i=0;
+    for book in books:
+        if book["id"] == id:
+            books.pop(i)
+            response = Response("", status=204)
+            return response
+        i += 1
+    invalidDeleteRequestErrorMsg = {
+        "error": "Invalid book object",
+        "helpString": "Please pass with proper object format"
+    }
+    response = Response(json.dumps(invalidDeleteRequestErrorMsg), status=400, mimetype='application/json')
     return response
 
 
