@@ -1,34 +1,22 @@
 from flask import Flask, jsonify, request, Response
+from settings import *
+from BookModel import *
 import json
 
-app = Flask(__name__)
 
-books = [
-    {
-        'id': 1,
-        'name': 'book 1',
-        'price': 9,
-        'author': 'sherlock'
-    },
-    {
-        'id': 2,
-        'name': 'book2',
-        'price': 19,
-        'author': 'moriarty'
-    }
-]
 
 @app.route('/')
 def home():
     return "check_api"
 
+
 @app.route('/books')
 def get_books():
-    return jsonify({'books': books})
+    return jsonify({'books': Book.get_all_books()})
 
 
 def validBookObject(bookObject):
-    if "id" in bookObject and "name" in bookObject and "price" in bookObject and "author" in bookObject:
+    if "code" in bookObject and "name" in bookObject and "price" in bookObject and "author" in bookObject:
         return True
     else:
         return False
@@ -36,17 +24,11 @@ def validBookObject(bookObject):
 
 @app.route('/books', methods=['POST'])
 def add_book():
-    request_data = request.get_json();
+    request_data = request.get_json()
     if validBookObject(request_data):
-        new_book = {
-            "id": request_data['id'],
-            "name": request_data['name'],
-            "price": request_data['price'],
-            "author": request_data['author']
-        }
-        books.insert(0, new_book)
+        Book.add_book(request_data['name'], request_data['author'], request_data['price'],  request_data['code'],)
         response = Response("", "201", mimetype='application/json')
-        response.headers['Location'] = "/books/" + str(new_book['id'])
+        response.headers['Location'] = "/books/" + str(request_data['code'])
         return response
     else:
         invalidBookObjectErrorMsg = {
@@ -57,63 +39,38 @@ def add_book():
         return response
 
 
-@app.route('/books/<int:id>', methods=['POST'])
-def get_book_by_id(id):
-    result = {}
-    for book in books:
-        if book['id'] == id:
-            result = {
-                'name': book['name'],
-                'price': book['price']
-            }
-
+@app.route('/books/<int:code>', methods=['POST'])
+def get_book_by_code(code):
+    result = Book.get_book(code)
     return jsonify(result)
 
 
-@app.route('/books/<int:id>', methods=['PUT'])
-def replace_book(id):
+@app.route('/books/<int:code>', methods=['PUT'])
+def replace_book(code):
     request_data = request.get_json()
-    new_book = {
-        "id": id,
-        "name": request_data['name'],
-        "author": request_data['author'],
-        "price": request_data['price']
-    }
-    i = 0;
-    for book in books:
-        current_id = book["id"]
-        if current_id == id:
-            books[i] = new_book
-        i += 1
+
+    Book.replace_book(code, request_data['name'], request_data['author'], request_data['price'])
     response = Response("", status=204)
     return response
 
 
-@app.route('/books/<int:id>', methods=['PATCH'])
-def update_book(id):
+@app.route('/books/<int:code>', methods=['PATCH'])
+def update_book(code):
     request_data = request.get_json()
-    updated_book = {}
     if "name" in request_data:
-        updated_book["name"] = request_data["name"]
+        Book.update_book_name(code, request_data['name'])
     if "price" in request_data:
-        updated_book["price"] = request_data["price"]
-    for book in books:
-        if book["id"] == id:
-            book.update(updated_book)
+        Book.update_book_price(code, request_data['price'])
     response = Response("", status=204)
-    response.headers['Location'] = "/books/" + str(id)
+    response.headers['Location'] = "/books/" + str(code)
     return response
 
 
-@app.route('/books/<int:id>', methods=['DELETE'])
-def delete_book(id):
-    i=0;
-    for book in books:
-        if book["id"] == id:
-            books.pop(i)
-            response = Response("", status=204)
-            return response
-        i += 1
+@app.route('/books/<int:code>', methods=['DELETE'])
+def delete_book(code):
+    if(Book.delete_book(code)):
+        return Response("", status=204)
+
     invalidDeleteRequestErrorMsg = {
         "error": "Invalid book object",
         "helpString": "Please pass with proper object format"
