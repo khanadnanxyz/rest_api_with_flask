@@ -26,6 +26,12 @@ def home():
 
 @app.route('/books')
 def get_books():
+    token = request.args.get('token')
+    try:
+        jwt.decode(token, app.config['SECRET_KEY'])
+    except:
+        return jsonify({'error': "Need a valid token to see this page."}), 401
+
     return jsonify({'books': Book.get_all_books()})
 
 
@@ -40,7 +46,7 @@ def validBookObject(bookObject):
 def add_book():
     request_data = request.get_json()
     if validBookObject(request_data):
-        Book.add_book(request_data['name'], request_data['author'], request_data['price'],  request_data['code'],)
+        Book.add_book(request_data['name'], request_data['author'], request_data['price'], request_data['code'], )
         response = Response("", "201", mimetype='application/json')
         response.headers['Location'] = "/books/" + str(request_data['code'])
         return response
@@ -82,7 +88,7 @@ def update_book(code):
 
 @app.route('/books/<int:code>', methods=['DELETE'])
 def delete_book(code):
-    if(Book.delete_book(code)):
+    if (Book.delete_book(code)):
         return Response("", status=204)
 
     invalidDeleteRequestErrorMsg = {
@@ -94,4 +100,3 @@ def delete_book(code):
 
 
 app.run(port=5000)
-
